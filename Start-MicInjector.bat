@@ -153,11 +153,12 @@ set "T_DEVICE_STATUS_OFFLINE=Status: offline"
 set "T_PRESET_LABEL=Capture preset:"
 set "T_PACKAGE_CHECK=Checking whether the Android component is installed..."
 set "T_DEPS_INFO=Using npm to run the project's pinned pnpm 10.6.5. No separate Corepack or global pnpm installation is needed."
-set "T_APK_DOWNLOAD1=Download and extract app-debug.apk from the GitHub Actions artifact."
-set "T_APK_DOWNLOAD2=Or enter the full path to an APK you already downloaded."
+set "T_APK_DOWNLOAD1=Download MicInjector-debug-apk.zip from the GitHub Releases page."
+set "T_APK_DOWNLOAD2=Extract app-debug.apk, then enter its full path below."
+set "T_APK_DOWNLOAD_LINK=https://github.com/W911D/MicInjector-Quest-VoiceRecognition/releases"
 set "T_APK_PATH_EXTRA=Enter the path without surrounding quotation marks."
 set "T_APK_NOT_FOUND=APK file still cannot be found. Returning to the main menu."
-set "T_APK_EMPTY=The selected APK is empty. Choose a valid build artifact."
+set "T_APK_EMPTY=The selected APK is empty. Choose a valid APK file."
 where adb.exe >nul 2>&1
 if errorlevel 1 (
     if exist "%ROOT%platform-tools\adb.exe" (
