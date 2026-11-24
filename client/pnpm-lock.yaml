@@ -1,0 +1,104 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@yume-chan/adb':
+        specifier: ^1.1.0
+        version: 1.1.0
+      '@yume-chan/adb-server-node-tcp':
+        specifier: ^1.1.0
+        version: 1.1.0
+      '@yume-chan/stream-extra':
+        specifier: ^1.0.0
+        version: 1.0.0
+      node-cpal:
+        specifier: 1.0.0
+        version: 1.0.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.14
+        version: 22.13.14
+
+packages:
+
+  '@types/node@22.13.14':
+    resolution: {integrity: sha512-Zs/Ollc1SJ8nKUAgc7ivOEdIBM8JAKgrqqUYi2J997JuKO7/tpQC+WCetQ1sypiKCQWHdvdg9wBNpUPEWZae7w==}
+
+  '@yume-chan/adb-server-node-tcp@1.1.0':
+    resolution: {integrity: sha512-B1BQIHyX4+scZ8wbvJhYarGP3nncDh/ZXGOz6kxy++Cnka1+vRsl5WDmiCKk1LIoDPiPEGg1UbI1fBnAnrib/g==}
+
+  '@yume-chan/adb@1.1.0':
+    resolution: {integrity: sha512-AC2HhTtxvEPrAQfMP9qDC3FI5Uc6U8j4oH+WMOQ+PKqzI4eme1X3V7OXgPNkrLTQ9SUWgLRw+lgzpvyTvNYpng==}
+
+  '@yume-chan/async@4.1.1':
+    resolution: {integrity: sha512-qNufiJnFrRAVjQKnyhD5BR3JalojkM74UcBL4caQe96UA8ixazNq1s2vV1WPPnKyAPiC+ZeBW0uEV3H2xmsNMA==}
+
+  '@yume-chan/event@1.0.0':
+    resolution: {integrity: sha512-tr4V34WQ5dz2UDMQl4ekj2zGLqwzmclOJpJL+9s2LJpURHw+Szy5g4gi4j86M+5epMFD8dpT9ym/wXHiUdtpsg==}
+
+  '@yume-chan/no-data-view@1.0.0':
+    resolution: {integrity: sha512-KrkXhJJQiCFFXb/eeHB++HCfKuwwiI7RVzHR7X/0XiwjQouxBpNpRFjEO25458Q5p/EPGprGWQ7BsHrmV3mkZQ==}
+
+  '@yume-chan/stream-extra@1.0.0':
+    resolution: {integrity: sha512-xltJYD5txn63e0jm7bHExmULowJTgjbsC205DN0GCxfdfrZIl6adKVheQNh1yOuOKV5Ok5luWNVSBp7Y2OVffA==}
+
+  '@yume-chan/struct@1.0.0':
+    resolution: {integrity: sha512-PQWUjgITlZstIkLD6ouRDwmR35Z9OJZ9daOQ6ZipzQ/mCnHTeoJf2v8x2+fmGyVrrHf9oaCWe8U/XW65onRlGg==}
+
+  node-cpal@1.0.0:
+    resolution: {tarball: https://registry.npmjs.org/node-cpal/-/node-cpal-1.0.0.tgz}
+    engines: {node: '>=22.0.0'}
+    os: [darwin, linux, win32]
+    cpu: [x64, arm64]
+
+  undici-types@6.20.0:
+    resolution: {integrity: sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==}
+
+snapshots:
+
+  '@types/node@22.13.14':
+    dependencies:
+      undici-types: 6.20.0
+
+  '@yume-chan/adb-server-node-tcp@1.1.0':
+    dependencies:
+      '@yume-chan/adb': 1.1.0
+      '@yume-chan/async': 4.1.1
+      '@yume-chan/stream-extra': 1.0.0
+      '@yume-chan/struct': 1.0.0
+
+  '@yume-chan/adb@1.1.0':
+    dependencies:
+      '@yume-chan/async': 4.1.1
+      '@yume-chan/event': 1.0.0
+      '@yume-chan/no-data-view': 1.0.0
+      '@yume-chan/stream-extra': 1.0.0
+      '@yume-chan/struct': 1.0.0
+
+  '@yume-chan/async@4.1.1': {}
+
+  '@yume-chan/event@1.0.0':
+    dependencies:
+      '@yume-chan/async': 4.1.1
+
+  '@yume-chan/no-data-view@1.0.0': {}
+
+  '@yume-chan/stream-extra@1.0.0':
+    dependencies:
+      '@yume-chan/async': 4.1.1
+      '@yume-chan/struct': 1.0.0
+
+  '@yume-chan/struct@1.0.0':
+    dependencies:
+      '@yume-chan/async': 4.1.1
+      '@yume-chan/no-data-view': 1.0.0
+
+  node-cpal@1.0.0: {}
+
+  undici-types@6.20.0: {}

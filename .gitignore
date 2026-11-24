@@ -1,0 +1,29 @@
+# Android / Gradle
+.gradle/
+local.properties
+**/build/
+.externalNativeBuild/
+.cxx/
+captures/
+
+# IDE and OS files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Node.js
+**/node_modules/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Local environment files and logs
+.env
+.env.*
+!.env.example
+*.log
+
+# Local MicInjector settings
+client/.micinjector-settings.json

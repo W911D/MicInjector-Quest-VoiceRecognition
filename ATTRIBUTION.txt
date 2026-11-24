@@ -1,0 +1,9 @@
+MicInjector — Quest Voice Recognition experiment
+
+This APK is an unofficial modified derivative of MicInjector by Simon Chan (GitHub: https://github.com/yume-chan/MicInjector).
+
+Modifications and Quest testing: W911D.
+
+This is not an official upstream release, and no endorsement by Simon Chan, Meta, or VRChat is implied.
+
+Upstream-derived code is licensed under the MIT License. The original copyright and license notice must accompany copies or substantial portions of the software. See LICENSE-MicInjector.

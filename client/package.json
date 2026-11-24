@@ -1,0 +1,40 @@
+{
+  "name": "micinjector-quest-client",
+  "version": "1.0.0",
+  "description": "Experimental Windows audio sender for the MicInjector Quest compatibility test",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.6.5",
+  "dependencies": {
+    "@yume-chan/adb": "^1.1.0",
+    "@yume-chan/adb-server-node-tcp": "^1.1.0",
+    "@yume-chan/stream-extra": "^1.0.0",
+    "node-cpal": "1.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "bindings",
+      "file-uri-to-path",
+      "nan"
+    ],
+    "ignoredBuiltDependencies": [
+      "@yume-chan/adb",
+      "@yume-chan/adb-server-node-tcp",
+      "@yume-chan/async",
+      "@yume-chan/event",
+      "@yume-chan/no-data-view",
+      "@yume-chan/stream-extra",
+      "@yume-chan/struct"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14"
+  }
+}

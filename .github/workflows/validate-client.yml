@@ -1,0 +1,244 @@
+name: Validate Windows client
+
+on:
+  push:
+    branches:
+      - public-release-prep
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-client:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install client dependencies using npm's pnpm bootstrap
+        working-directory: client
+        run: npm exec --yes --package=pnpm@10.6.5 -- pnpm install --frozen-lockfile
+
+      - name: Check JavaScript syntax
+        working-directory: client
+        run: node --check src/index.js
+  validate-windows-launcher:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Check Windows launcher device-selection structure
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $launcher = Get-Content -Raw "Start-MicInjector.bat"
+
+          if (([regex]::Matches($launcher, '(?m)^:SELECT_DEVICE\r?$')).Count -ne 1) {
+              throw "Expected exactly one SELECT_DEVICE subroutine."
+          }
+          if (([regex]::Matches($launcher, '(?m)^call :SELECT_DEVICE\r?$')).Count -ne 2) {
+              throw "Expected only the USB selection and USB Wi-Fi setup selection to use SELECT_DEVICE; saved Wi-Fi devices use the registry chooser."
+          }
+
+          $requiredText = @(
+              'devices -l',
+              ':REFRESH_DEVICE_LIST',
+              'choice /c 123456789RX',
+              ':ADD_DEVICE',
+              ':DISPLAY_DEVICE',
+              ':SHOW_DEVICE_HELP',
+              'DEVICE_NAME[!DEVICE_COUNT!]=!DEVICE_NAME!',
+              'DEVICE_MODEL[!DEVICE_COUNT!]=!DEVICE_MODEL!',
+              'unauthorized',
+              'offline',
+              'oculus-adb-drivers'
+          )
+
+          foreach ($required in $requiredText) {
+              if (-not $launcher.Contains($required)) {
+                  throw "Launcher is missing required device-selection feature: $required"
+              }
+          }
+
+          if ($launcher.Contains('settings get global device_name')) {
+              throw "Launcher still prefers Android's generic user-facing device_name setting."
+          }
+
+          $referencedKeys = [regex]::Matches($launcher, '!T_([A-Z0-9_]+)!') |
+              ForEach-Object { $_.Groups[1].Value } |
+              Sort-Object -Unique
+
+          $inlineKeys = [regex]::Matches($launcher, '(?m)^set "T_([A-Z0-9_]+)=') |
+              ForEach-Object { $_.Groups[1].Value }
+          $missingKeys = @($referencedKeys | Where-Object { $_ -notin $inlineKeys })
+          if ($missingKeys.Count -gt 0) {
+              throw "Launcher is missing inline English text: $($missingKeys -join ', ')"
+          }
+
+          if ($launcher -match 'LANGUAGE_MENU|MIC_INJECTOR_LANGUAGE|LANG_FILE|languages\\') {
+              throw "Launcher must not contain a language selector or external language-pack loader."
+          }
+          if (Test-Path "languages") {
+              throw "The multilingual language-pack folder should not exist."
+          }
+
+          $client = Get-Content -Raw "client/src/index.js"
+          if ($client -match 'MIC_INJECTOR_LANGUAGE|const LANGUAGE\s*=|Установленная версия node-cpal|La version installée de node-cpal') {
+              throw "Client must contain English UI text only."
+          }
+
+          $pathCheckIndex = $launcher.IndexOf('shell pm path moe.chensi.micinjector')
+          $listCheckIndex = $launcher.IndexOf('shell pm list packages moe.chensi.micinjector')
+          $packageGuardIndex = $launcher.LastIndexOf('if "!INSTALLED_PACKAGE!"=="0"')
+          if ($pathCheckIndex -lt 0 -or $listCheckIndex -lt $pathCheckIndex -or $packageGuardIndex -lt $listCheckIndex) {
+              throw "Launcher must check the installed package path and exact package list before prompting for installation."
+          }
+          if (-not $launcher.Contains('findstr /i /b /c:"package:"') -or
+              -not $launcher.Contains('findstr /i /l /x /c:"package:moe.chensi.micinjector"')) {
+              throw "Launcher package detection must validate the package path and exact package name."
+          }
+
+          if (-not $client.Contains('let connectionInterrupted = false;') -or
+              -not $client.Contains('if (stopping || connectionInterrupted) return;') -or
+              -not $client.Contains('Connection to Quest interrupted. Audio sending has stopped.') -or
+              -not $client.Contains('void stopClient(1);')) {
+              throw "Client must stop repeated audio writes and report a Quest connection interruption only once."
+          }
+          if ($client.Contains('Could not send audio to Quest:')) {
+              throw "Client still logs every failed audio packet instead of reporting the interruption once."
+          }
+
+          foreach ($requiredWifiText in @(
+              'T_WIFI_EXISTING=Connect to a saved Quest',
+              'T_WIFI_MANAGE=Manage saved Quest connections',
+              'T_WIFI_USB=Set up a new Quest using USB',
+              ':WIFI_MANAGE',
+              ':WIFI_EDIT_SAVED_NAME',
+              ':WIFI_REMOVE_SAVED',
+              ':WIFI_USB_SETUP',
+              ':MIGRATE_LEGACY_WIFI',
+              ':LOAD_SAVED_WIFI_LIST',
+              ':ADD_SAVED_WIFI_ENTRY',
+              ':DISPLAY_SAVED_WIFI',
+              ':SAVE_SAVED_WIFI_RECORD',
+              ':VALIDATE_WIFI_NAME',
+              ':REFRESH_SAVED_QUEST_MODEL',
+              'powershell.exe -NoProfile -Command',
+              '\p{L}',
+              ':CONNECT_SAVED_WIFI',
+              ':ASK_WIFI_PORT',
+              ':VALIDATE_WIFI_PORT',
+              'shell ip -4 route get 1.1.1.1',
+              'tcpip !QUEST_PORT!',
+              'findstr /r /x "[1-9][0-9]*"',
+              '1024',
+              '65535',
+              'set "MICINJECTOR_WIFI_DIR=%MICINJECTOR_STATE_DIR%\wifi-devices"',
+              'quest-wifi-ip.txt',
+              'IP=!QUEST_IP!',
+              'PORT=!QUEST_PORT!',
+              'MODEL=!QUEST_MODEL!',
+              'NAME=!QUEST_NICKNAME!',
+              'LAST=!QUEST_LAST_USED!',
+              'Last connected:',
+              'QUEST_LAST_USED=%DATE% %TIME%',
+              'call :LOAD_SAVED_WIFI_LIST',
+              'call :SAVE_SAVED_WIFI_RECORD',
+              'call :CONNECT_SAVED_WIFI',
+              'dir /b /a-d /o-d',
+              'findstr /i /r "\.ini$"',
+              ':DELETE_DUPLICATE_SAVED_WIFI_PROFILES_FOR_IP',
+              ':DELETE_ALL_SAVED_WIFI_PROFILES_FOR_IP',
+              'set "QUEST_RECORD_FILE=%MICINJECTOR_WIFI_DIR%\!QUEST_IP!.ini"',
+              'Ignore older duplicate profiles for the same IP.',
+              'del "%MICINJECTOR_WIFI_FILE%"'
+          )) {
+              if (-not $launcher.Contains($requiredWifiText)) {
+                  throw "Launcher is missing multi-Quest Wi-Fi registry feature: $requiredWifiText"
+              }
+          }
+          if (-not $launcher.Contains('if errorlevel 4 goto MENU') -or
+              -not $launcher.Contains('if errorlevel 3 goto WIFI_USB_SETUP') -or
+              -not $launcher.Contains('if errorlevel 2 goto WIFI_MANAGE') -or
+              -not $launcher.Contains('if errorlevel 1 goto WIFI_EXISTING')) {
+              throw "Wi-Fi menu does not route to saved-device connection, management, setup and back."
+          }
+          if (-not $launcher.Contains('choice /c 123456789X /n /m "  Select Quest number (X = Back): "') -or
+              -not $launcher.Contains('Select Quest to manage (X = Back)')) {
+              throw "Saved Quest lists must support selecting a device to connect or manage."
+          }
+          if ($launcher.Contains('WIFI_PAIR') -or
+              $launcher.Contains('WIFI_TUTORIAL') -or
+              $launcher.Contains('mdns services') -or
+              $launcher.Contains('_adb-tls-pairing._tcp') -or
+              $launcher.Contains('_adb-tls-connect._tcp') -or
+              $launcher.Contains('Pair device with pairing code')) {
+              throw "The normal Wi-Fi flow must not require Wireless Debugging pairing or mDNS."
+          }
+          if (-not $launcher.Contains('if defined SAVED_WIFI_PORT set "QUEST_PORT=!SAVED_WIFI_PORT!"') -or
+              -not $launcher.Contains('set "QUEST_PORT=5555"') -or
+              -not $launcher.Contains('set "WIFI_SERIAL=!QUEST_IP!:!QUEST_PORT!"')) {
+              throw "Saved Quest profiles must retain custom ports and legacy 5555 compatibility."
+          }
+          if ($launcher.Contains('!QUEST_IP!_!QUEST_PORT!.ini') -or
+              -not $launcher.Contains('set "QUEST_RECORD_FILE=%MICINJECTOR_WIFI_DIR%\!QUEST_IP!.ini"') -or
+              -not $launcher.Contains('Ignore older duplicate profiles for the same IP.')) {
+              throw "Saved Quest profiles must use the IP as the unique key and update the port in the existing record."
+          }
+
+          $consentMarker = 'choice /c 12 /n /m "  !T_APK_CONFIRM! "'
+          $installMarker = '"%ADB_EXE%" -s "%ADB_DEVICE_SERIAL%" install "%MIC_INJECTOR_APK_PATH%"'
+          $consentIndex = $launcher.IndexOf($consentMarker)
+          $installIndex = $launcher.IndexOf($installMarker)
+          $declineIndex = $launcher.IndexOf('goto MENU', $consentIndex)
+
+          if ($consentIndex -lt 0 -or $installIndex -lt 0 -or $declineIndex -lt 0 -or
+              $consentIndex -ge $installIndex -or $declineIndex -ge $installIndex) {
+              throw "The APK install command must be behind the confirmation prompt and No must cancel first."
+          }
+
+          $warningIndex = $launcher.IndexOf('SECURITY AND INSTALLATION WARNING')
+          $yellowIndex = $launcher.IndexOf('color 0E', $warningIndex)
+          $confirmationIndex = $launcher.IndexOf('choice /c 12 /n /m "  !T_APK_CONFIRM! "', $warningIndex)
+          $normalColorIndex = $launcher.IndexOf('color 0B', $confirmationIndex)
+          if ($warningIndex -lt 0 -or $yellowIndex -lt $warningIndex -or
+              $confirmationIndex -lt $yellowIndex -or $normalColorIndex -lt $confirmationIndex) {
+              throw "The APK warning must be shown in yellow and return to the normal console color after confirmation."
+          }
+          foreach ($riskText in @(
+              'It may be unstable or incompatible with your headset, Android version, or target app.',
+              'Only install software from a source you trust.',
+              'This project is experimental and has not been verified on every Quest model or software version.'
+          )) {
+              if (-not $launcher.Contains($riskText)) {
+                  throw "The APK warning is missing user-facing risk information: $riskText"
+              }
+          }
+          if ($launcher.Contains('device/account ban') -or
+              $launcher.Contains('Modifying the headset OS or system software carries particular risk')) {
+              throw "The APK warning must not imply an unsupported system-modification or device-ban claim."
+          }
+
+          $noticeIndex = $launcher.IndexOf('MIC TRANSLATION NOTICE')
+          $ackIndex = $launcher.IndexOf('MIC_TRANSLATION_NOTICE_ACK=Press ENTER when done to continue:')
+          $clientStartIndex = $launcher.IndexOf('node src/index.js')
+          if ($noticeIndex -lt 0 -or $ackIndex -lt $noticeIndex -or $clientStartIndex -lt $ackIndex) {
+              throw "Mic Translation notice and Enter acknowledgement must appear before the client starts."
+          }
+          foreach ($noticeText in @('open the Quest menu that shows your apps', 'Then close the Quest menu again', 'This can make Mic Translation start working', 'IF THERE IS STILL NO AUDIO, CHECK VRCHAT:', 'Make sure your microphone is not muted.', 'Noise Suppression: Off.', 'Mic Activation Threshold: 0.', 'Mic Output Volume: Set it to an audible level.', 'Make sure VRChat has microphone permission in Quest settings.')) {
+              if (-not $launcher.Contains($noticeText)) {
+                  throw "Mic Translation notice is missing instruction: $noticeText"
+              }
+          }
+
+          Write-Host "Windows launcher structure, inline English text, dual ADB package detection, single connection-interruption reporting, and APK consent checks passed."
