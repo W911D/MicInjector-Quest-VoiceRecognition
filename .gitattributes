@@ -1,0 +1,2 @@
+# Keep the batch launcher runnable from GitHub source ZIPs.
+Start-MicInjector.bat -text
